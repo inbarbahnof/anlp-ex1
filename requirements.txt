@@ -1,0 +1,7 @@
+transformers
+datasets
+evaluate
+wandb
+numpy
+torch
+dataclasses
