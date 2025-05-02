@@ -127,6 +127,7 @@ if __name__ == '__main__':
         trainer.model.save_pretrained(f"./results/{run_name}/final_model")
 
     if custom_args.do_predict:
+        model.eval()
         predictions = trainer.predict(test_dataset)
         pred_labels = np.argmax(predictions.predictions, axis=1)
 
