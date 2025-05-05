@@ -22,29 +22,17 @@ class Arguments:
         default=-1,
         metadata={"help": "Number of samples to use for prediction. Use -1 for all."}
     )
-    num_train_epochs: int = field(
-        default=3,
-        metadata={"help": "Number of training epochs"}
+    model_path: str = field(
+        default="bert-base-uncased",
+        metadata={"help": "Path to a pretrained model (for prediction or training)"}
     )
     lr: float = field(
-        default=5e-5,
-        metadata={"help": "Learning rate"}
+            default=5e-5,
+            metadata={"help": "Learning rate"}
     )
     batch_size: int = field(
-        default=16,
-        metadata={"help": "Training batch size"}
-    )
-    do_train: bool = field(
-        default=False,
-        metadata={"help": "Whether to run training"}
-    )
-    do_predict: bool = field(
-        default=False,
-        metadata={"help": "Whether to run prediction and save predictions.txt"}
-    )
-    model_path: str = field(
-        default="",
-        metadata={"help": "Path to a pretrained model (for prediction)"}
+            default=16,
+            metadata={"help": "Training batch size"}
     )
 
 
@@ -85,12 +73,10 @@ if __name__ == '__main__':
     parser = HfArgumentParser((Arguments, TrainingArguments))
     custom_args, training_args = parser.parse_args_into_dataclasses()
 
-    # change the training args to the costume ones
-    training_args.per_device_train_batch_size = custom_args.batch_size
     training_args.learning_rate = custom_args.lr
-    training_args.num_train_epochs = custom_args.num_train_epochs
+    training_args.per_device_train_batch_size = custom_args.batch_size
 
-    run_name = f"mrpc-e{custom_args.num_train_epochs}-lr{custom_args.lr}-bs{custom_args.batch_size}"
+    run_name = f"mrpc-e{training_args.num_train_epochs}-lr{custom_args.lr}-bs{custom_args.batch_size}"
     wandb.init(project="anlp-ex1", name=run_name)
 
     # create a model
@@ -122,17 +108,27 @@ if __name__ == '__main__':
         callbacks=[LossLoggerCallback()],
     )
 
-    if custom_args.do_train:
+    if training_args.do_train:
         trainer.train()
         trainer.model.save_pretrained(f"./results/{run_name}/final_model")
+        tokenizer.save_pretrained(f"./results/{run_name}/final_model")
 
-    if custom_args.do_predict:
+    if training_args.do_predict:
+        model = AutoModelForSequenceClassification.from_pretrained(
+            custom_args.model_path,
+            local_files_only=True
+        )
+        tokenizer = AutoTokenizer.from_pretrained(
+            custom_args.model_path,
+            local_files_only=True
+        )
+        trainer.model = model  # ensure Trainer uses the loaded model
         model.eval()
+
         predictions = trainer.predict(test_dataset)
         pred_labels = np.argmax(predictions.predictions, axis=1)
 
         pred_path = "predictions.txt"
-
         with open(pred_path, "w") as f:
             for i, label in enumerate(pred_labels):
                 s1 = raw_datasets["test"]["sentence1"][i]
