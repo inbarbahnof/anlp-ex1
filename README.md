@@ -1,7 +1,3 @@
-Here is the readme content in a more copy-paste friendly format:
-
----
-
 # Advanced NLP Exercise 1: Fine-Tuning
 
 This is the code base for the **ANLP HUJI** course Exercise 1, where we fine-tune pretrained models to perform sentence pair classification on the **MRPC dataset**.
